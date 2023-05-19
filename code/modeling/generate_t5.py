@@ -17,7 +17,11 @@ def load_data(path_to_data, split="test"):
                          encoding="utf-8", on_bad_lines="warn")
         df["Context"] = df.example
         df["Targets"] = [w.split("%")[0] for w in df.word]
-        df["Definition"] = df.gloss
+        try:
+            df["Definition"] = df.gloss
+        except AttributeError:
+            print("No definitions found, replacing them with examples")
+            df["Definition"] = df.example
     else:
         datafile = path.join(path_to_data, split + ".eg.gz")
         datafile_defs = path.join(path_to_data, split + ".txt.gz")

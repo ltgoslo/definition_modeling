@@ -140,7 +140,9 @@ if __name__ == "__main__":
             [system1better, system1worse, system1onpar])
     plt.ylabel("Probability")
     plt.title("Sense labels from definitions and usages")
-    plt.show()
+    #plt.show()
+    plt.savefig("definitions_usages_better.png", dpi=300, bbox_inches="tight")
+    plt.clf()
 
     logger.info(f"Both systems were bad with the probability of {bothsystemsbad:0.2f}")
     logger.info(f"One system was good with the probability of {somethinggood:0.2f}")
@@ -150,4 +152,5 @@ if __name__ == "__main__":
             [bothsystemsbad, somethinggood, bothgood])
     plt.ylabel("Probability")
     plt.title("General quality of two sense labels (from definitions and usages)")
-    plt.show()
+    plt.savefig("general_quality_labels.png", dpi=300, bbox_inches="tight")
+    #plt.show()

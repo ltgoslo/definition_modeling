@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import seaborn as sns
 from transformers import T5Tokenizer
-from generate_t5 import load_data
+from generate_flan import load_data
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dataset = load_data(args.data, split="all")
+    dataset = load_data(args.data, split="train")
 
     logger.info(dataset.head())
 
@@ -33,7 +33,6 @@ if __name__ == "__main__":
     n_lemmas = len(set(dataset['Targets'].tolist()))
 
     logger.info(f"Entries: {n_entries}, Lemmas: {n_lemmas}, Ratio: {n_entries / n_lemmas}")
-
     # glosses = df['gloss'].tolist()
     # examples = df['example'].tolist()
 
@@ -66,24 +65,20 @@ if __name__ == "__main__":
         example_lens = [len(e.split()) - 1 for e in examples]
         definition_lens = [len(d.split()) for d in definitions]
 
-    # sns.distplot(gloss_lens, hist=True, kde=False,
-    #              bins=130, color = 'orange',
-    #              hist_kws={'edgecolor':'black'})
-    #
-    # print(np.mean(gloss_lens))
 
     ax = sns.displot(example_lens, kind="hist",
                      bins=120, color='orange')
 
     if args.plot:
+        sns.set(font_scale=1.5)
         if args.model:
             ax.set(xlabel="Example length in subwords")
             ax.set(title=f"Example lengths in subwords in {args.data}")
-            ax.savefig(args.data.split("/")[-1] + "_hist_subwords.png", dpi=300)
+            ax.savefig(args.data.split("/")[0] + "_hist_subwords.png", dpi=300)
         else:
             ax.set(xlabel="Example length in words")
             ax.set(title=f"Example lengths in words in {args.data}")
-            ax.savefig(args.data.split("/")[-1] + "_hist.png", dpi=300)
+            ax.savefig(args.data.split("/")[0] + "_hist.png", dpi=300)
 
     logger.info("Average example length: {:.2f} ± {:.2f}".format(np.mean(example_lens), np.std(example_lens)))
     logger.info("Average definition length: {:.2f} ± {:.2f}".format(np.mean(definition_lens), np.std(definition_lens)))
