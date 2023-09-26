@@ -42,6 +42,7 @@ def load_data(path_to_data, split="test"):
 
 
 def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=False):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f"Tokenizing with max length {arguments.maxl}...")
     inputs = cur_tokenizer(
         in_prompts,
@@ -55,8 +56,11 @@ def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=Fals
     target_ids = cur_tokenizer(targets, add_special_tokens=False).input_ids
     target_ids = torch.tensor([el[-1] for el in target_ids])
 
-    test_dataset = torch.utils.data.TensorDataset(inputs["input_ids"], inputs["attention_mask"],
-                                                  target_ids)
+    test_dataset = torch.utils.data.TensorDataset(
+        inputs["input_ids"].to(device),
+        inputs["attention_mask"].to(device),
+        target_ids.to(device),
+    )
     test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=arguments.bsize, shuffle=False)
     logger.info(f"Generating definitions with batch size {arguments.bsize}...")
 

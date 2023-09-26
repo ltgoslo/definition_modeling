@@ -45,14 +45,14 @@ def main(arguments):
         index2id.append(entry_id)
 
     dataset = torch.utils.data.TensorDataset(
-        inputs.input_ids,
-        inputs.attention_mask,
-        torch.tensor(np.arange(len(index2id))),
+        inputs.input_ids.to(device),
+        inputs.attention_mask.to(device),
+        torch.tensor(np.arange(len(index2id))).to(device),
     )
     dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=arguments.bsize, shuffle=False
     )
-    logger.info(f"Generating definitions with batch size {arguments.bsize}...")
+    logger.info(f"Generating definitions embeddings with batch size {arguments.bsize}...")
 
     embeddings = {}
     for _inputs, att_masks, target_indices in tqdm(dataloader):
