@@ -10,6 +10,38 @@ and the [Language Technology Group](https://www.mn.uio.no/ifi/english/research/g
 - [FLAN-T5-Definition Large (780M parameters)](https://huggingface.co/ltg/flan-t5-definition-en-large)
 - [FLAN-T5-Definition XL (3B parameters)](https://huggingface.co/ltg/flan-t5-definition-en-xl)
 
+## Usage
+
+### Download datasets
+
+- [wordnet and oxford](https://github.com/shonosuke/ishiwatari-naacl2019#download-dataset)
+
+*.txt files are tsv files containing the target words and their gold standard definitions.
+
+*.eg files are tsv files containing the target words and their usage examples.
+
+- [CoDWoE](https://github.com/TimotheeMickus/codwoe#using-the-datasets)
+
+### Predict definitions
+
+Gzip test.txt and test.eg files, put them into the same <testdata> folder and run code/modeling/generate_t5.py, e.g.
+
+```commandline
+python3 code/modeling/generate_t5.py --model ltg/flan-t5-definition-en-base --testdata testdata
+```
+
+### Generate DistilRoBERTa sentence embeddings for the definitions
+
+code/modeling/generate_t5.py outputs a tsv file named as <prompt>_post_predicted.tsv. The gold standard definitions are in the Definition column, 
+and the predicted ones are in the Definitions column. Run code/embed_definitions.py, e.g.
+
+```commandline
+python3 code/embed_definitions.py --input_path "what_is_the_definition_of_<trg>?_post_predicted.tsv" --key_to_entry_id Sense
+```
+
+key_to_entry_id depends on the dataset used. Sense is used in wordnet
+
+
 ## Citation
 ```
 @inproceedings{giulianelli-etal-2023-interpretable,
