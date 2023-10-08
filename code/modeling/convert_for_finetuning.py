@@ -15,12 +15,25 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg("--traindata", "-t", help="Path to the directory with the train data",
-        required=True)
-    arg("--save", "-s", help="Where to save the resulting file",
-        default="ft_data.tsv.gz")
-    arg("--prompt", "-p", type=int, help="Prompt to use, from the prompt list below "
-                                         "(from 0 to 7)", default=7)
+    arg(
+        "--traindata",
+        "-t",
+        help="Path to the directory with the train data",
+        required=True,
+    )
+    arg(
+        "--save",
+        "-s",
+        help="Where to save the resulting file",
+        default="ft_data.tsv.gz",
+    )
+    arg(
+        "--prompt",
+        "-p",
+        type=int,
+        help="Prompt to use, from the prompts list below",
+        default=7,
+    )
 
     args = parser.parse_args()
 
@@ -33,21 +46,23 @@ if __name__ == "__main__":
         ["Define <TRG>", "post"],
         ["Define the word <TRG>", "post"],
         ["What is the definition of <TRG>?", "post"],
+        ["Quelle est la définition de <TRG>?", "post"],
+        ["Что такое <TRG>?", "post"],
     ]
 
-    train_dataframe = load_data(args.traindata)
+    dataframe = load_data(args.traindata)
 
     task_instruction = prompts[args.prompt]
 
     input_sentences = []
-    for target, context in zip(train_dataframe.Targets, train_dataframe.Real_Contexts):
+    for target, context in zip(dataframe.Targets, dataframe.Real_Contexts):
         if task_instruction[1] == "pre":
             prompt = ". ".join([task_instruction[0].replace("<TRG>", target), context])
         else:
             prompt = ". ".join([context, task_instruction[0].replace("<TRG>", target)])
         input_sentences.append(prompt)
 
-    train_dataframe["examples"] = input_sentences
+    dataframe["examples"] = input_sentences
 
     logging.info("Finished reading and processing examples.")
 
@@ -55,11 +70,17 @@ if __name__ == "__main__":
         definitionfile = path.join(args.traindata, "valid.txt.gz")
         df = pd.read_csv(definitionfile, delimiter="\t")
         df.columns = ["Sense", "POS", "Dataset", "Definitions", "Dummy0", "Dummy1"]
-        train_dataframe["definitions"] = df.Definitions
+        dataframe["definitions"] = df.Definitions
     else:
-        train_dataframe["definitions"] = train_dataframe.gloss
+        dataframe["definitions"] = dataframe.gloss
     logging.info("Finished reading and processing definitions.")
 
-    train_dataframe = train_dataframe[["examples", "definitions"]]
-    train_dataframe.to_csv(args.save, sep="\t", index=False)
+    dataframe = dataframe[["examples", "definitions"]]
+    total_count = len(dataframe.index)
+    len_train = int(total_count * 0.9)
+    train_dataframe = dataframe.iloc[:len_train]
+    val_dataframe = dataframe.iloc[len_train:]
+
+    train_dataframe.to_csv(f"{args.save}_train.tsv.gz", sep="\t", index=False)
+    val_dataframe.to_csv(f"{args.save}_val.tsv.gz", sep="\t", index=False)
     logger.info(f"Training data saved to {args.save} ...")
