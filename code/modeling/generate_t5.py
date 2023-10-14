@@ -3,7 +3,7 @@
 import csv
 import pandas as pd
 import torch
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import T5Tokenizer, T5ForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
 import argparse
 import logging
 import tqdm
@@ -12,7 +12,7 @@ from os import path
 
 def load_data(path_to_data, split="test"):
     if "CoDWoE" in path_to_data or "dwug" in path_to_data:
-        datafile = path.join(path_to_data, "complete.tsv.gz")
+        datafile = path.join(path_to_data, f"{split}.complete.tsv.gz")
         df = pd.read_csv(datafile, delimiter="\t", header=0, quoting=csv.QUOTE_NONE,
                          encoding="utf-8", on_bad_lines="warn")
         df["Context"] = df.example
@@ -42,7 +42,6 @@ def load_data(path_to_data, split="test"):
 
 
 def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=False):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f"Tokenizing with max length {arguments.maxl}...")
     inputs = cur_tokenizer(
         in_prompts,
@@ -56,11 +55,12 @@ def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=Fals
     target_ids = cur_tokenizer(targets, add_special_tokens=False).input_ids
     target_ids = torch.tensor([el[-1] for el in target_ids])
 
-    test_dataset = torch.utils.data.TensorDataset(
-        inputs["input_ids"].to(device),
-        inputs["attention_mask"].to(device),
-        target_ids.to(device),
-    )
+    if torch.cuda.is_available():
+        inputs = inputs.to("cuda")
+        target_ids = target_ids.to("cuda")
+
+    test_dataset = torch.utils.data.TensorDataset(inputs["input_ids"], inputs["attention_mask"],
+                                                  target_ids)
     test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=arguments.bsize, shuffle=False)
     logger.info(f"Generating definitions with batch size {arguments.bsize}...")
 
@@ -68,10 +68,10 @@ def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=Fals
     for inp, att, targetwords in tqdm.tqdm(test_iter):
         if filter_target:
             bad = [[el] for el in targetwords.tolist()]
-            outputs = lm.generate(input_ids=inp, attention_mask=att,
+            outputs = lm.generate(input_ids=inp, attention_mask=att, max_new_tokens=60,
                                   do_sample=False, bad_words_ids=bad)
         else:
-            outputs = lm.generate(input_ids=inp, attention_mask=att,
+            outputs = lm.generate(input_ids=inp, attention_mask=att, max_new_tokens=60,
                                   do_sample=False)  # Generate multiple definitions?
         predictions = cur_tokenizer.batch_decode(outputs, skip_special_tokens=True)
         definitions += predictions
@@ -101,15 +101,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    tokenizer = T5Tokenizer.from_pretrained(args.model, add_prefix_space=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, add_prefix_space=True)
     if torch.cuda.is_available():
-        model = T5ForConditionalGeneration.from_pretrained(args.model, device_map="auto")
+        model = AutoModelForSeq2SeqLM.from_pretrained(args.model, device_map="auto")
     else:
-        model = T5ForConditionalGeneration.from_pretrained(args.model, low_cpu_mem_usage=True)
+        model = AutoModelForSeq2SeqLM.from_pretrained(args.model, low_cpu_mem_usage=True)
 
     logger.info(f"Model loaded from {args.model}")
 
-    test_dataframe = load_data(args.testdata, split="test")
+    test_dataframe = load_data(args.testdata, split="trial")  # Don't forget to choose the correct split
 
     prompts = [
         ["Give the definition of <TRG>:", "pre"],
@@ -120,6 +120,8 @@ if __name__ == "__main__":
         ["Define <TRG>", "post"],
         ["Define the word <TRG>", "post"],
         ["What is the definition of <TRG>?", "post"],
+        ["Quelle est la définition de <TRG>?", "post"],
+        ["Что такое <TRG>?", "post"],
     ]
 
     task_instructions = [prompts[args.prompt]]
