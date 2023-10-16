@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import csv
 import pandas as pd
 import numpy as np
 import torch
@@ -42,7 +43,7 @@ def vizualize(vectors, classes, seq_classes, labels, protos, lemma, method="PCA"
     plot.clf()
 
     for color, class_label, mark, x, y in zip(
-            class2color, seq_classes, protos, xpositions, ypositions
+        class2color, seq_classes, protos, xpositions, ypositions
     ):
         plot.scatter(
             x,
@@ -51,9 +52,10 @@ def vizualize(vectors, classes, seq_classes, labels, protos, lemma, method="PCA"
             marker="*",
             alpha=0.8,
             color=color,
-            label=labels[class_label] if mark != 1
-                                         and class_label not in seen
-                                         and labels[class_label] != "Too small sense"
+            label=labels[class_label]
+            if mark != 1
+            and class_label not in seen
+            and labels[class_label] != "Too small sense"
             else "",
         )
         if mark != 1:
@@ -83,8 +85,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg("--data", "-d", help="Path to the tsv file with definitions, usages and clusters",
-        required=True)
+    arg(
+        "--data",
+        "-d",
+        help="Path to the tsv file with definitions, usages and clusters",
+        required=True,
+    )
     arg(
         "--model",
         "-m",
@@ -92,21 +98,41 @@ if __name__ == "__main__":
         default="sentence-transformers/all-distilroberta-v1",
     )  # for other languages: sentence-transformers/distiluse-base-multilingual-cased-v1
     arg("--bsize", "-b", type=int, help="Batch size", default=4)
-    arg("--mode", type=str, choices=["definition", "usage"],
-        help="Find most prototypical definition or most prototypical usage?", default="definition")
-    arg("--save", "-s", type=str, choices=["plot", "text"],
-        help="Save plots or usages and definitions?", default="plot")
+    arg(
+        "--mode",
+        type=str,
+        choices=["definition", "usage"],
+        help="Find most prototypical definition or most prototypical usage?",
+        default="definition",
+    )
+    arg(
+        "--save",
+        "-s",
+        type=str,
+        choices=["plot", "text"],
+        help="Save plots or usages and definitions?",
+        default="plot",
+    )
     arg("--examples", "-e", type=bool, help="Do we need examples?", default=False)
+    arg(
+        "--output",
+        "-o",
+        help="Where to save a file with cluster labels?",
+        default="sense_labels.tsv"
+      )
+
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = (AutoModel.from_pretrained(args.model).eval().to(device))
+    model = AutoModel.from_pretrained(args.model).eval().to(device)
 
-    dataset = pd.read_csv(args.data, delimiter="\t")
+    dataset = pd.read_csv(args.data, delimiter="\t",quoting=csv.QUOTE_NONE)
     lemmas = sorted(set(dataset.word.values))
 
-    examples = pd.DataFrame({"Targets": [], "Examples": [], "Definitions": [], "Clusters": []})
+    labels_df = pd.DataFrame(
+        {"Targets": [], "Examples": [], "Definitions": [], "Clusters": []}
+    )
     nr_examples = 5
 
     for word in lemmas:
@@ -143,21 +169,28 @@ if __name__ == "__main__":
             dataloader = torch.utils.data.DataLoader(
                 token_dataset, batch_size=args.bsize, shuffle=False
             )
-            for _inputs, att_masks, target_indices in tqdm(dataloader):
+            for _inputs, att_masks, target_indices in dataloader:
                 with torch.no_grad():
-                    model_output = model(input_ids=_inputs.to(device),
-                                         attention_mask=att_masks.to(device),
-                                         output_hidden_states=True)
+                    model_output = model(
+                        input_ids=_inputs.to(device),
+                        attention_mask=att_masks.to(device),
+                        output_hidden_states=True,
+                    )
 
-                sentence_embeddings = _mean_pooling(model_output, att_masks)
+                sentence_embeddings = _mean_pooling(model_output, att_masks.to(device))
                 sentence_embeddings = torch.nn.functional.normalize(
                     sentence_embeddings, dim=1).to("cpu")
-                embeddings[target_indices[0]: target_indices[-1] + 1, :] = sentence_embeddings
+                embeddings[
+                    target_indices[0] : target_indices[-1] + 1, :
+                ] = sentence_embeddings
             if len(representations) < 3:
                 logger.debug(f"Sense {sense}:")
-                logger.debug(f"Too few usages/definitions for this sense: {len(representations)}. "
-                             f"At least 3 required")
+                logger.debug(
+                    f"Too few usages/definitions for this sense: {len(representations)}. "
+                    f"At least 3 required"
+                )
                 proto_definitions.append("Too small sense")
+                prototype_definition = "Too few examples to generate a proper definition!"
             else:
                 logger.info(f"Sense {sense}:")
                 prototype_embedding = np.mean(embeddings, axis=0)
@@ -170,21 +203,29 @@ if __name__ == "__main__":
                 logger.info(prototype_definition)
                 proto_definitions.append(prototype_definition)
                 proto_markers[proto_index] = 1
-                if args.save == "text":
-                    if args.examples:
-                        sample_size = nr_examples if len(usages) >= nr_examples else len(usages)
-                        cur_examples = sample(usages, k=sample_size)
-                        cur_examples = "\n".join(cur_examples)
-                    else:
-                        cur_examples = ""
-                    examples.loc[len(examples)] = [word, cur_examples, prototype_definition,
-                                                   int(sense)]
+            if args.save == "text":
+                if args.examples:
+                    sample_size = (
+                        nr_examples if len(usages) >= nr_examples else len(usages)
+                    )
+                    cur_examples = sample(usages, k=sample_size)
+                    cur_examples = "\n".join(cur_examples)
+                else:
+                    cur_examples = ""
+            labels_df.loc[len(labels_df)] = [
+                word,
+                cur_examples,
+                prototype_definition,
+                int(sense),
+                    ]
             sense_matrix.append(embeddings)
             sense_labels += [sense for el in range(len(definitions))]
             markers += proto_markers
 
         if args.save == "plot":
-            image = vizualize(sense_matrix, senses, sense_labels, proto_definitions, markers, word)
+            image = vizualize(
+                sense_matrix, senses, sense_labels, proto_definitions, markers, word
+            )
 
     if args.save == "text":
-        examples.to_csv("examples.tsv", sep="\t", index=False)
+        labels_df.to_csv(args.output, sep="\t", index=False, quoting=csv.QUOTE_NONE)

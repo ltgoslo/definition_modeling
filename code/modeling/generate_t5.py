@@ -23,8 +23,8 @@ def load_data(path_to_data, split="test"):
         try:
             df["Definition"] = df.gloss
         except AttributeError:
-            print("No definitions found, replacing them with examples")
-            df["Definition"] = df.example
+            print("No definitions found in the input file")
+            # df["Definition"] = df.example
     else:
         datafile = path.join(path_to_data, split + ".eg.gz")
         datafile_defs = path.join(path_to_data, split + ".txt.gz")
@@ -91,14 +91,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
     arg("--model", "-m", help="Path to or name of a T5 model", required=True)
-    arg("--testdata", "-t", help="Path to the directory with the test data (2 files)",
+    arg("--testdata", "-t", help="Path to the directory with the input data",
         required=True)
     arg("--bsize", "-b", type=int, help="Batch size", default=4)
     arg("--maxl", "-ml", type=int, help="Max source length", default=256)
     arg("--save", "-s", help="Where to save the predicted definitions",
         default="predicted.tsv.gz")
-    arg("--prompt", "-p", type=int, help="Prompt to use, from the prompt list below "
-                                         "(from 0 to 7)", default=7)
+    arg("--prompt", "-p", type=int, help="Prompt to use, from the prompt list below", default=8)
     arg("--filter", "-f", type=int, help="Filter out target word from definitions?", choices=[0, 1],
         default=0)
 
@@ -146,8 +145,7 @@ if __name__ == "__main__":
                          filter_target=args.filter)
 
         test_dataframe["Definitions"] = answers
-        outname = "_".join([identifier, args.save])
         if "CoDWoE" in args.testdata:
             test_dataframe = test_dataframe[["Targets", "Real_Contexts", "Definitions"]]
-        test_dataframe.to_csv(outname, sep="\t", index=False, encoding="utf-8")
-        logger.info(f"Predictions saved to {outname} ...")
+        test_dataframe.to_csv(args.save, sep="\t", index=False, encoding="utf-8", quoting=csv.QUOTE_NONE)
+        logger.info(f"Predictions of {identifier} saved to {outname} ...")
