@@ -11,8 +11,11 @@ from os import path
 
 
 def load_data(path_to_data, split="test"):
-    if "CoDWoE" in path_to_data or "dwug" in path_to_data:
-        datafile = path.join(path_to_data, f"{split}.complete.tsv.gz")
+    if "oxford" not in path_to_data and "wordnet" not in path_to_data:
+        if split:
+            datafile = path.join(path_to_data, f"{split}.complete.tsv.gz")
+        else:
+            datafile = path.join(path_to_data, f"complete.tsv.gz")
         df = pd.read_csv(datafile, delimiter="\t", header=0, quoting=csv.QUOTE_NONE,
                          encoding="utf-8", on_bad_lines="warn")
         df["Context"] = df.example
@@ -109,9 +112,10 @@ if __name__ == "__main__":
 
     logger.info(f"Model loaded from {args.model}")
 
-    test_dataframe = load_data(args.testdata, split="trial")  # Don't forget to choose the correct split
+    test_dataframe = load_data(args.testdata, split="")  # Don't forget to choose the correct split
 
     prompts = [
+        ["", "post"],
         ["Give the definition of <TRG>:", "pre"],
         ["Define <TRG>:", "pre"],
         ["Define the word <TRG>:", "pre"],
@@ -122,6 +126,8 @@ if __name__ == "__main__":
         ["What is the definition of <TRG>?", "post"],
         ["Quelle est la définition de <TRG>?", "post"],
         ["Что такое <TRG>?", "post"],
+        ["Hva betyr <TRG>?", "post"],
+        ["Was ist die Definition von <TRG>?", "post"],
     ]
 
     task_instructions = [prompts[args.prompt]]
