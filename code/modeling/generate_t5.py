@@ -148,4 +148,4 @@ if __name__ == "__main__":
         if "CoDWoE" in args.testdata:
             test_dataframe = test_dataframe[["Targets", "Real_Contexts", "Definitions"]]
         test_dataframe.to_csv(args.save, sep="\t", index=False, encoding="utf-8", quoting=csv.QUOTE_NONE)
-        logger.info(f"Predictions of {identifier} saved to {outname} ...")
+        logger.info(f"Predictions of {identifier} saved to {args.save} ...")

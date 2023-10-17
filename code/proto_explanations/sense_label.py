@@ -135,8 +135,8 @@ if __name__ == "__main__":
     )
     nr_examples = 5
 
-    for word in lemmas:
-        logger.info(f"Processing {word}...")
+    for word in tqdm(lemmas):
+        logger.debug(f"Processing {word}...")
         df = dataset[(dataset.word == word) & (dataset.cluster != -1)]
         senses = sorted(set(df.cluster.values))
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
                 proto_definitions.append("Too small sense")
                 prototype_definition = "Too few examples to generate a proper definition!"
             else:
-                logger.info(f"Sense {sense}:")
+                logger.debug(f"Sense {sense}:")
                 prototype_embedding = np.mean(embeddings, axis=0)
                 sims = np.dot(embeddings, prototype_embedding)
                 proto_index = np.argmax(sims)
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                     prototype_usage = usages[proto_index]
                     logger.info(prototype_usage)
                 prototype_definition = definitions[proto_index]
-                logger.info(prototype_definition)
+                logger.debug(prototype_definition)
                 proto_definitions.append(prototype_definition)
                 proto_markers[proto_index] = 1
             if args.save == "text":
