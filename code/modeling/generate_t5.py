@@ -114,19 +114,19 @@ if __name__ == "__main__":
     test_dataframe = load_data(args.testdata, split="")  # Don't forget to choose the correct split
 
     prompts = [
-        ["", "post"],
-        ["Give the definition of <TRG>:", "pre"],
-        ["Define <TRG>:", "pre"],
-        ["Define the word <TRG>:", "pre"],
-        ["What is the definition of <TRG>?", "pre"],
-        ["Give the definition of <TRG>", "post"],
-        ["Define <TRG>", "post"],
-        ["Define the word <TRG>", "post"],
-        ["What is the definition of <TRG>?", "post"],
-        ["Quelle est la définition de <TRG>?", "post"],
-        ["Что такое <TRG>?", "post"],
-        ["Hva betyr <TRG>?", "post"],
-        ["Was ist die Definition von <TRG>?", "post"],
+        ["", "post"],  # 0
+        ["Give the definition of <TRG>:", "pre"],  # 1
+        ["Define <TRG>:", "pre"],  # 2
+        ["Define the word <TRG>:", "pre"],  # 3
+        ["What is the definition of <TRG>?", "pre"],  # 4
+        ["Give the definition of <TRG>", "post"],  # 5
+        ["Define <TRG>", "post"],  # 6
+        ["Define the word <TRG>", "post"],  # 7
+        ["What is the definition of <TRG>?", "post"], #  8
+        ["Quelle est la définition de <TRG>?", "post"],  # 9
+        ["Что такое <TRG>?", "post"],  # 10
+        ["Hva betyr <TRG>?", "post"],  # 11
+        ["Was ist die Definition von <TRG>?", "post"],  # 12
     ]
 
     task_instructions = [prompts[args.prompt]]
