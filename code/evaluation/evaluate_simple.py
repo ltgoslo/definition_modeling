@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--metrics",
         nargs='*',
+        default=["sacrebleu", "rougeL", "bertscore", "exact_match"]
     )
     parser.add_argument(
         "--multiple_definitions_same_sense_id",

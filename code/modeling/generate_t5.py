@@ -44,7 +44,8 @@ def load_data(path_to_data, split="test"):
     return df
 
 
-def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=False):
+def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=False, num_beams=1,
+        num_beam_groups=1, sampling=False, temperature=1.0, repetition_penalty=1.0):
     logger.info(f"Tokenizing with max length {arguments.maxl}...")
     inputs = cur_tokenizer(
         in_prompts,
@@ -66,16 +67,19 @@ def define(in_prompts, lm, cur_tokenizer, arguments, targets, filter_target=Fals
                                                   target_ids)
     test_iter = torch.utils.data.DataLoader(test_dataset, batch_size=arguments.bsize, shuffle=False)
     logger.info(f"Generating definitions with batch size {arguments.bsize}...")
-
+    gen_args = dict(do_sample=sampling, num_beams=num_beams, num_beam_groups=num_beam_groups,
+            temperature=temperature, repetition_penalty=repetition_penalty)
+    if num_beam_groups > 1:
+        gen_args["diversity_penalty"] = 0.5
     definitions = []
     for inp, att, targetwords in tqdm.tqdm(test_iter):
         if filter_target:
             bad = [[el] for el in targetwords.tolist()]
             outputs = lm.generate(input_ids=inp, attention_mask=att, max_new_tokens=60,
-                                  do_sample=False, bad_words_ids=bad)
+                                  bad_words_ids=bad, **gen_args)
         else:
             outputs = lm.generate(input_ids=inp, attention_mask=att, max_new_tokens=60,
-                                  do_sample=False)  # Generate multiple definitions?
+                                  **gen_args)
         predictions = cur_tokenizer.batch_decode(outputs, skip_special_tokens=True)
         definitions += predictions
     logger.info(f"Generating definitions finished")
@@ -99,7 +103,12 @@ if __name__ == "__main__":
         default="predicted.tsv.gz")
     arg("--prompt", "-p", type=int, help="Prompt to use, from the prompt list below", default=8)
     arg("--filter", "-f", type=int, help="Filter out target word from definitions?", choices=[0, 1],
+        default=1)
+    arg("--sampling", "-smpl", type=int, help="Sampling instead of greedy decoding", choices=[0, 1],
         default=0)
+    arg("--rpenalty", "-rep", type=float, help="Repetition penalty", default=1.0)
+    arg("--num_beams", "-beams", type=int, help="Number of beams for beam search", default=1)
+    arg("--num_beam_groups", "-bg", type=int, help="Number of beam groups for beam search", default=1)
 
     args = parser.parse_args()
 
@@ -142,10 +151,12 @@ if __name__ == "__main__":
                 prompt = " ".join([context, task_prefix[0].replace("<TRG>", target)])
             input_sentences.append(prompt)
         answers = define(input_sentences, model, tokenizer, args, test_dataframe.Targets.tolist(),
-                         filter_target=args.filter)
+                         filter_target=args.filter, sampling=args.sampling,
+                         repetition_penalty=args.rpenalty, num_beams=args.num_beams,
+                         num_beam_groups=args.num_beam_groups)
 
-        test_dataframe["Definitions"] = answers
+        test_dataframe["Generated_Definition"] = answers
         if "CoDWoE" in args.testdata:
-            test_dataframe = test_dataframe[["Targets", "Real_Contexts", "Definitions"]]
+            test_dataframe = test_dataframe[["Targets", "Real_Contexts", "Definition", "Generated_Definition"]]
         test_dataframe.to_csv(args.save, sep="\t", index=False, encoding="utf-8", quoting=csv.QUOTE_NONE)
         logger.info(f"Predictions of {identifier} saved to {args.save} ...")
