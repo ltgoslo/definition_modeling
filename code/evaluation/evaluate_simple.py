@@ -133,20 +133,21 @@ if __name__ == "__main__":
                     pred_len = len(pred_def.split())
                     if pred_len < 5:
                         n = pred_len
-                    # try:
                     pred_def_scores[metric].append(nist_score.sentence_nist(
                         gold_def.split(),
                         pred_def.split(),
                         n=n
                     ))
-                    # except:
-                    #     pred_def_scores["nist"].append(0)
                 # TODO: Language!!!
                 elif metric == "bertscore":
                     evaluator, output_key = eval_metrics[metric]
                     pred_def_scores[metric].append(evaluator.compute(
                         predictions=[pred_def], references=[gold_def], lang="en")[output_key]
-                                                   )
+                                                  )
+                elif metric == "rougeL":
+                    evaluator, output_key = eval_metrics[metric]
+                    pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
+                        references=[gold_def], tokenizer=lambda x: x.split())[output_key])
                 else:
                     evaluator, output_key = eval_metrics[metric]
                     pred_def_scores[metric].append(evaluator.compute(
