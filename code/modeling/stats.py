@@ -4,9 +4,9 @@
 import argparse
 import logging
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 from transformers import T5Tokenizer
-from generate_flan import load_data
+from generate_t5 import load_data
 
 if __name__ == "__main__":
     logging.basicConfig(

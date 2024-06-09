@@ -46,6 +46,9 @@ if __name__ == "__main__":
         "--save_instance_scores",
         action="store_true"
     )
+    parser.add_argument("--whitespace", "-w", type=int,
+            help="Use whitespace tokenization instead of default in Rouge?",
+            choices=[0, 1], default=1)
     args = parser.parse_args()
 
     df = pd.read_csv(
@@ -56,7 +59,13 @@ if __name__ == "__main__":
     )
 
     gold_dictionary = defaultdict(list)
-    for sense_id, gold_definition in zip(df.Targets, df.Definition):
+    try:
+        sense_ids = df.Sense
+    except AttributeError:
+        print("No sense ids found, using target words as senses")
+        sense_ids = df.Targets
+
+    for sense_id, gold_definition in zip(sense_ids, df.Definition):
         if type(gold_definition) is not str:
             raise NotImplementedError(
                 f"Gold definition field should contain a string: {type(gold_definition)}, "
@@ -86,7 +95,7 @@ if __name__ == "__main__":
 
     preds_for_mauve, gold_for_mauve = [], []
 
-    sense_ids, predicted_definitions = df.Targets, df.Generated_Definition
+    predicted_definitions = df.Generated_Definition
 
     for sense_id, predicted_definition in zip(sense_ids, predicted_definitions):
         if type(predicted_definition) is list:
@@ -146,8 +155,12 @@ if __name__ == "__main__":
                                                   )
                 elif metric == "rougeL":
                     evaluator, output_key = eval_metrics[metric]
-                    pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
-                        references=[gold_def], tokenizer=lambda x: x.split())[output_key])
+                    if args.whitespace:
+                        pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
+                            references=[gold_def], tokenizer=lambda x: x.split())[output_key])
+                    else:
+                        pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
+                            references=[gold_def],)[output_key])
                 else:
                     evaluator, output_key = eval_metrics[metric]
                     pred_def_scores[metric].append(evaluator.compute(
