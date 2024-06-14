@@ -11,7 +11,7 @@ from nltk.translate import bleu_score, nist_score
 
 def get_rid_of_period(el):
     pattern = re.compile("\.(?!\d)")
-    return [pattern.sub('', sent) for sent in el]
+    return [pattern.sub("", sent) for sent in el]
 
 
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         "--data_path",
         type=str,
         help="File with examples, generated and gold definitions",
-        required=True
+        required=True,
     )
     parser.add_argument(
         "--output",
@@ -28,8 +28,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--metrics",
-        nargs='*',
-        default=["sacrebleu", "rougeL", "bertscore", "exact_match"]
+        nargs="*",
+        default=["sacrebleu", "rougeL", "bertscore", "exact_match"],
     )
     parser.add_argument(
         "--multiple_definitions_same_sense_id",
@@ -48,20 +48,22 @@ if __name__ == "__main__":
         type=int,
         default=0,
     )
+    parser.add_argument("--save_instance_scores", action="store_true")
     parser.add_argument(
-        "--save_instance_scores",
-        action="store_true"
+        "--whitespace",
+        "-w",
+        type=int,
+        help="Use whitespace tokenization instead of default in Rouge?",
+        choices=[0, 1],
+        default=1,
     )
-    parser.add_argument("--whitespace", "-w", type=int,
-            help="Use whitespace tokenization instead of default in Rouge?",
-            choices=[0, 1], default=1)
     args = parser.parse_args()
 
     df = pd.read_csv(
         args.data_path,
         delimiter="\t",
         quoting=csv.QUOTE_NONE,
-        encoding='utf-8',
+        encoding="utf-8",
     )
 
     gold_dictionary = defaultdict(list)
@@ -75,7 +77,8 @@ if __name__ == "__main__":
         if type(gold_definition) is not str:
             raise NotImplementedError(
                 f"Gold definition field should contain a string: {type(gold_definition)}, "
-                f"{gold_definition}")
+                f"{gold_definition}"
+            )
         gold_dictionary[sense_id].append(gold_definition)
 
     eval_metrics = {
@@ -89,8 +92,15 @@ if __name__ == "__main__":
     }
 
     if not args.metrics:
-        args.metrics = ["rougeL", "nltk_bleu", "nist", "sacrebleu", "meteor", "bertscore",
-                        "exact_match"]
+        args.metrics = [
+            "rougeL",
+            "nltk_bleu",
+            "nist",
+            "sacrebleu",
+            "meteor",
+            "bertscore",
+            "exact_match",
+        ]
 
     if "mauve" in args.metrics:
         mauve = evaluate.load("mauve")
@@ -105,7 +115,9 @@ if __name__ == "__main__":
 
     for sense_id, predicted_definition in zip(sense_ids, predicted_definitions):
         if type(predicted_definition) is list:
-            raise NotImplementedError("Evaluation of multiple samples not implemented yet.")
+            raise NotImplementedError(
+                "Evaluation of multiple samples not implemented yet."
+            )
         if type(predicted_definition) is not str:
             predicted_definition = ""
 
@@ -137,45 +149,62 @@ if __name__ == "__main__":
                     continue
                 if metric == "nltk_bleu":
                     auto_reweigh = False if len(pred_def.split()) == 0 else True
-                    pred_def_scores[metric].append(bleu_score.sentence_bleu(
-                        gold_def.split(),
-                        pred_def.split(),
-                        smoothing_function=bleu_score.SmoothingFunction().method2,
-                        auto_reweigh=auto_reweigh
-                    ))
+                    pred_def_scores[metric].append(
+                        bleu_score.sentence_bleu(
+                            gold_def.split(),
+                            pred_def.split(),
+                            smoothing_function=bleu_score.SmoothingFunction().method2,
+                            auto_reweigh=auto_reweigh,
+                        )
+                    )
                 elif metric == "nist":
                     n = 5
                     pred_len = len(pred_def.split())
                     if pred_len < 5:
                         n = pred_len
-                    pred_def_scores[metric].append(nist_score.sentence_nist(
-                        gold_def.split(),
-                        pred_def.split(),
-                        n=n
-                    ))
+                    pred_def_scores[metric].append(
+                        nist_score.sentence_nist(
+                            gold_def.split(), pred_def.split(), n=n
+                        )
+                    )
                 elif metric == "bertscore":
                     evaluator, output_key = eval_metrics[metric]
-                    pred_def_scores[metric].append(evaluator.compute(
-                        predictions=[pred_def], references=[gold_def], lang=args.lang)[output_key]                           
-                                                  )
+                    pred_def_scores[metric].append(
+                        evaluator.compute(
+                            predictions=[pred_def],
+                            references=[gold_def],
+                            lang=args.lang,
+                        )[output_key]
+                    )
                 elif metric == "rougeL":
                     evaluator, output_key = eval_metrics[metric]
                     if args.whitespace:
-                        pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
-                            references=[gold_def], tokenizer=lambda x: x.split())[output_key])
+                        pred_def_scores[metric].append(
+                            evaluator.compute(
+                                predictions=[pred_def],
+                                references=[gold_def],
+                                tokenizer=lambda x: x.split(),
+                            )[output_key]
+                        )
                     else:
-                        pred_def_scores[metric].append(evaluator.compute(predictions=[pred_def],
-                            references=[gold_def],)[output_key])
+                        pred_def_scores[metric].append(
+                            evaluator.compute(
+                                predictions=[pred_def],
+                                references=[gold_def],
+                            )[output_key]
+                        )
                 else:
                     evaluator, output_key = eval_metrics[metric]
-                    pred_def_scores[metric].append(evaluator.compute(
-                        predictions=[pred_def], references=[gold_def])[output_key]
-                                                   )
+                    pred_def_scores[metric].append(
+                        evaluator.compute(
+                            predictions=[pred_def], references=[gold_def]
+                        )[output_key]
+                    )
 
         pred_def_score = dict()
         for metric in args.metrics:
             if not pred_def_scores[metric]:
-                pred_def_score[metric] = 0.
+                pred_def_score[metric] = 0.0
             elif args.multiple_definitions_same_sense_id == "max":
                 pred_def_score[metric] = np.max(pred_def_scores[metric])
             elif args.multiple_definitions_same_sense_id == "mean":
@@ -185,12 +214,14 @@ if __name__ == "__main__":
             scores[metric].append(pred_def_score[metric])
 
     if "mauve" in args.metrics:
-        scores["mauve"].append(mauve.compute(
-            predictions=preds_for_mauve,
-            references=gold_for_mauve,
-            featurize_model_name="gpt2",
-            max_text_length=512).mauve
-                               )
+        scores["mauve"].append(
+            mauve.compute(
+                predictions=preds_for_mauve,
+                references=gold_for_mauve,
+                featurize_model_name="gpt2",
+                max_text_length=512,
+            ).mauve
+        )
 
     aggr_output = []
     for metric in args.metrics:
