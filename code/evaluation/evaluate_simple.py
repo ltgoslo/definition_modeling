@@ -38,6 +38,12 @@ if __name__ == "__main__":
         help="Options are: 'max', 'mean', 'ignore'.",
     )
     parser.add_argument(
+        "--lang",
+        type=str,
+        default="en",
+        help="Specify the language of your data to use proper sentence embedding model",
+    )
+    parser.add_argument(
         "--debug_instances",
         type=int,
         default=0,
@@ -147,11 +153,10 @@ if __name__ == "__main__":
                         pred_def.split(),
                         n=n
                     ))
-                # TODO: Language!!!
                 elif metric == "bertscore":
                     evaluator, output_key = eval_metrics[metric]
                     pred_def_scores[metric].append(evaluator.compute(
-                        predictions=[pred_def], references=[gold_def], lang="en")[output_key]
+                        predictions=[pred_def], references=[gold_def], lang=args.lang)[output_key]                           
                                                   )
                 elif metric == "rougeL":
                     evaluator, output_key = eval_metrics[metric]
