@@ -279,6 +279,7 @@ if __name__ == "__main__":
             test_dataframe = test_dataframe[
                 ["Targets", "Real_Contexts", "Definition", "Generated_Definition"]
             ]
+        test_dataframe["Real_Contexts"] = input_sentences
         test_dataframe.to_csv(
             args.save, sep="\t", index=False, encoding="utf-8", quoting=csv.QUOTE_NONE
         )
