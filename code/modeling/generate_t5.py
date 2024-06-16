@@ -1,18 +1,16 @@
 #!/bin/env python3
 # coding: utf-8
+import argparse
 import csv
+import logging
+from os import path
 import pandas as pd
 import torch
+import tqdm
 from transformers import (
-    T5Tokenizer,
-    T5ForConditionalGeneration,
     AutoTokenizer,
     AutoModelForSeq2SeqLM,
 )
-import argparse
-import logging
-import tqdm
-from os import path
 
 
 def load_data(path_to_data, split="test"):
@@ -21,12 +19,14 @@ def load_data(path_to_data, split="test"):
         df = pd.read_csv(
             path_to_data,
             delimiter="\t",
-            header=None,
+            header="infer",
             quoting=csv.QUOTE_NONE,
             encoding="utf-8",
             on_bad_lines="warn",
         )
-        df.columns = ["Targets", "Context"]
+        if len(df.columns) == 2:
+            df.columns = ["Targets", "Context"]
+        logger.info(f"Found the following data columns: {df.columns}")
     else:
         logger.info(f"The input data is a directory: {path_to_data}")
         if "oxford" not in path_to_data and "wordnet" not in path_to_data:
@@ -87,17 +87,17 @@ def load_data(path_to_data, split="test"):
 
 
 def define(
-    in_prompts,
-    lm,
-    cur_tokenizer,
-    arguments,
-    targets,
-    filter_target=False,
-    num_beams=1,
-    num_beam_groups=1,
-    sampling=False,
-    temperature=1.0,
-    repetition_penalty=1.0,
+        in_prompts,
+        lm,
+        cur_tokenizer,
+        arguments,
+        targets,
+        filter_target=False,
+        num_beams=1,
+        num_beam_groups=1,
+        sampling=False,
+        temperature=1.0,
+        repetition_penalty=1.0,
 ):
     logger.info(f"Tokenizing with max length {arguments.maxl}...")
     inputs = cur_tokenizer(
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         ["Give the definition of <TRG>", "post"],  # 5
         ["Define <TRG>", "post"],  # 6
         ["Define the word <TRG>", "post"],  # 7
-        ["What is the definition of <TRG>?", "post"],  #  8
+        ["What is the definition of <TRG>?", "post"],  # 8
         ["Quelle est la définition de <TRG>?", "post"],  # 9
         ["Что такое <TRG>?", "post"],  # 10
         ["Hva betyr <TRG>?", "post"],  # 11
@@ -254,7 +254,7 @@ if __name__ == "__main__":
         identifier = "_".join(task_prefix).lower().replace(" ", "_")
         input_sentences = []
         for target, context in zip(
-            test_dataframe.Targets, test_dataframe.Real_Contexts
+                test_dataframe.Targets, test_dataframe.Real_Contexts
         ):
             if task_prefix[1] == "pre":
                 prompt = " ".join([task_prefix[0].replace("<TRG>", target), context])
