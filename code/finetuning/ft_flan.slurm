@@ -4,7 +4,7 @@
 #SBATCH --account=ec30
 #SBATCH --partition=accel    # To use the accelerator nodes
 #SBATCH --gpus=2
-#SBATCH --time=9:00:00
+#SBATCH --time=1:00:00
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --cpus-per-task=8
@@ -14,11 +14,11 @@ source ${HOME}/.bashrc
 # the important bit: unload all current modules (just in case) and load only the necessary ones
 module purge
 module use -a /fp/projects01/ec30/software/easybuild/modules/all/
-module load nlpl-datasets/2.3.2-foss-2021a-Python-3.9.5
-module load nlpl-accelerate/0.13.2-foss-2021a-Python-3.9.5
-module load nlpl-sentencepiece/0.1.96-foss-2021a-Python-3.9.5
-module load nlpl-nlptools/2022.01-foss-2021a-Python-3.9.5
-module load nlpl-transformers/4.24.0-foss-2021a-Python-3.9.5
+module load nlpl-datasets/2.17.1-foss-2022b-Python-3.10.8
+module load nlpl-accelerate/0.27.2-foss-2022b-Python-3.10.8
+module load nlpl-sentencepiece/0.1.99-foss-2022b-Python-3.10.8
+module load nlpl-nlptools/02-foss-2022b-Python-3.10.8
+module load nlpl-transformers/4.38.2-foss-2022b-Python-3.10.8
 
 
 MODEL=${1}
@@ -39,17 +39,18 @@ python3 finetune_flan.py \
     --overwrite_output_dir \
     --evaluation_strategy=epoch \
     --logging_strategy=epoch \
-    --per_device_train_batch_size=16 \
-    --per_device_eval_batch_size=16 \
+    --per_device_train_batch_size=4 \
+    --per_device_eval_batch_size=4 \
     --predict_with_generate \
     --save_total_limit=5 \
     --max_source_length=192 \
     --max_target_length=128 \
     --bf16=False \
-    --num_train_epochs=20 \
+    --num_train_epochs=2 \
     --save_strategy=epoch \
     --load_best_model_at_end=True \
     --metric_for_best_model=eval_rouge1 \
     --ddp_find_unused_parameters=False \
     --optim=adafactor \
+    --report_to=none \
 #    --source_prefix "summarize: "
