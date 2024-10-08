@@ -22,7 +22,7 @@ def main(arguments):
     tokenizer = AutoTokenizer.from_pretrained(arguments.model)
     model = (
         AutoModel.from_pretrained(arguments.model)
-        .eval()
+        .eval_metrics()
         .to(device)
     )
     # AutoModelWithLMHead.from_pretrained("sentence-transformers/distiluse-base-multilingual-cased-v1")

@@ -73,7 +73,7 @@ def main(args):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModel.from_pretrained(args.model).eval().to(device)
+    model = AutoModel.from_pretrained(args.model).eval_metrics().to(device)
 
     embeddings = {}
     for word in tqdm(sorted(word2ids.keys())):

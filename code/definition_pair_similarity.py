@@ -63,9 +63,9 @@ def main(args):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     roberta_tokenizer = AutoTokenizer.from_pretrained("roberta-large")
-    roberta = AutoModel.from_pretrained("roberta-large").eval().to(device)
+    roberta = AutoModel.from_pretrained("roberta-large").eval_metrics().to(device)
     sent_roberta_tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-distilroberta-v1")
-    sent_roberta = AutoModel.from_pretrained("sentence-transformers/all-distilroberta-v1").eval().to(device)
+    sent_roberta = AutoModel.from_pretrained("sentence-transformers/all-distilroberta-v1").eval_metrics().to(device)
     # AutoModelWithLMHead.from_pretrained("sentence-transformers/distiluse-base-multilingual-cased-v1")
 
     # bertscore = evaluate.load("bertscore", device=device)

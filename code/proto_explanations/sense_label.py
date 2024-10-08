@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModel.from_pretrained(args.model).eval().to(device)
+    model = AutoModel.from_pretrained(args.model).eval_metrics().to(device)
 
     dataset = pd.read_csv(args.data, delimiter="\t",quoting=csv.QUOTE_NONE)
     lemmas = sorted(set(dataset.word.values))

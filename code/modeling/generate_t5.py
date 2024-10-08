@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model, add_prefix_space=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
     if torch.cuda.is_available():
         model = AutoModelForSeq2SeqLM.from_pretrained(args.model, device_map="auto")
     else:
