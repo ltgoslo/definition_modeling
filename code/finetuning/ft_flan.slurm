@@ -4,9 +4,9 @@
 #SBATCH --account=ec30
 #SBATCH --partition=accel    # To use the accelerator nodes
 #SBATCH --gpus=2
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH --nodes=1
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --cpus-per-task=8
 
 source ${HOME}/.bashrc
@@ -14,12 +14,11 @@ source ${HOME}/.bashrc
 # the important bit: unload all current modules (just in case) and load only the necessary ones
 module purge
 module use -a /fp/projects01/ec30/software/easybuild/modules/all/
-module load nlpl-datasets/2.17.1-foss-2022b-Python-3.10.8
-module load nlpl-accelerate/0.27.2-foss-2022b-Python-3.10.8
+module load nlpl-datasets/2.21.0-foss-2022b-Python-3.10.8
+module load nlpl-accelerate/0.33.0-foss-2022b-Python-3.10.8
 module load nlpl-sentencepiece/0.1.99-foss-2022b-Python-3.10.8
-module load nlpl-nlptools/02-foss-2022b-Python-3.10.8
-module load nlpl-transformers/4.38.2-foss-2022b-Python-3.10.8
-
+module load nlpl-nlptools/03-foss-2022b-Python-3.10.8
+module load nlpl-transformers/4.43.4-foss-2022b-Python-3.10.8
 
 MODEL=${1}
 TRAIN_DATASET=${2}
@@ -29,7 +28,11 @@ SAVE=${4}
 echo ${MODEL}
 echo ${TRAIN_DATASET}
 
-python3 finetune_flan.py \
+export NCCL_DEBUG=INFO
+export CUDA_LAUNCH_BLOCKING=1 
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+
+srun python3 finetune_model.py \
     --model_name_or_path ${MODEL} \
     --do_train \
     --do_eval \
@@ -45,6 +48,7 @@ python3 finetune_flan.py \
     --save_total_limit=5 \
     --max_source_length=192 \
     --max_target_length=128 \
+    --val_max_target_length=128 \
     --bf16=False \
     --num_train_epochs=2 \
     --save_strategy=epoch \

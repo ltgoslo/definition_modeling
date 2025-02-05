@@ -27,6 +27,7 @@ def load_data(path_to_data, split="test"):
         if len(df.columns) == 2:
             df.columns = ["Targets", "Context"]
         logger.info(f"Found the following data columns: {df.columns}")
+        df.dropna(subset=["Context"], inplace=True)
     else:
         logger.info(f"The input data is a directory: {path_to_data}")
         if "oxford" not in path_to_data and "wordnet" not in path_to_data:
