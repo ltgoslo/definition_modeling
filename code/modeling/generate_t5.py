@@ -246,6 +246,7 @@ if __name__ == "__main__":
         ["Что такое <TRG>?", "post"],  # 10
         ["Hva betyr <TRG>?", "post"],  # 11
         ["Was ist die Definition von <TRG>?", "post"],  # 12
+        ["Mikä on <TRG>?", "post"], # 13
     ]
 
     task_instructions = [prompts[args.prompt]]
