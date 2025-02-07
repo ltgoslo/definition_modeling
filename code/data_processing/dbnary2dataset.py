@@ -9,7 +9,7 @@ import pandas as pd
 prompts = [
 ". Что такое <TRG>?",  # 0
 "Hva betyr <TRG>?",  # 1
-"Was ist die Definition von <TRG>?",  # 2
+". Was ist die Definition von <TRG>?",  # 2
 ". Mikä on <TRG>?", # 3
 ]
 
