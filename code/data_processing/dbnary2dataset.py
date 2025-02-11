@@ -11,6 +11,7 @@ prompts = [
 "Hva betyr <TRG>?",  # 1
 ". Was ist die Definition von <TRG>?",  # 2
 ". Mikä on <TRG>?", # 3
+". Mitä tarkoittaa <TRG>?", # 4
 ]
 
 prompt = prompts[int(sys.argv[3])]
