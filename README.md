@@ -10,6 +10,9 @@ and the [Language Technology Group](https://www.mn.uio.no/ifi/english/research/g
 - [FLAN-T5-Definition Large (780M parameters)](https://huggingface.co/ltg/flan-t5-definition-en-large)
 - [FLAN-T5-Definition XL (3B parameters)](https://huggingface.co/ltg/flan-t5-definition-en-xl)
 
+See our [model hub](https://huggingface.co/collections/ltg/definition-modeling-6580c4598ecea67c7d5b1970) for more languages and newer models.
+
+
 ## Usage
 
 ### Download datasets
